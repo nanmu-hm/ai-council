@@ -12,10 +12,12 @@ class FakeProvider(Provider):
         self.name = name
         self.events = events
         self.delay = delay
+        self.started = asyncio.Event()
         self.cancelled = asyncio.Event()
         self.completed = asyncio.Event()
 
     async def stream(self, request: ProviderRequest):
+        self.started.set()
         try:
             for event in self.events:
                 if self.delay:
@@ -71,10 +73,15 @@ async def test_council_cancels_all_providers_when_consumer_closes():
 
     stream = council.ask(request)
     await stream.__anext__()
+    await asyncio.wait_for(
+        asyncio.gather(*(provider.started.wait() for provider in providers)), 1
+    )
     await stream.aclose()
 
-    await asyncio.wait_for(asyncio.gather(*(p.completed.wait() for p in providers)), 1)
-    assert all(p.cancelled.is_set() for p in providers)
+    await asyncio.wait_for(
+        asyncio.gather(*(provider.completed.wait() for provider in providers)), 1
+    )
+    assert all(provider.cancelled.is_set() for provider in providers)
 
 
 @pytest.mark.asyncio
