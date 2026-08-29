@@ -1,0 +1,10 @@
+services:
+  ai-council:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    environment:
+      WEBMODEL_BASE_URL: ${WEBMODEL_BASE_URL:-http://webmodel:8000/v1}
+      WEBMODEL_API_KEY: ${WEBMODEL_API_KEY:-}
+      OLLAMA_BASE_URL: ${OLLAMA_BASE_URL:-http://host.docker.internal:11434/v1}
+    restart: unless-stopped
